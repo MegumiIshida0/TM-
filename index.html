@@ -34,13 +34,14 @@
 
     // モデルの読み込み
     function preload() {
+      console.log("Loading model...");
       classifier = ml5.imageClassifier(imageModelURL + 'model.json', modelReady);
     }
 
     // モデルが準備完了した時に呼び出される
     function modelReady() {
+      console.log("Model loaded successfully");
       document.getElementById('prediction').innerText = "Model Loaded. Please upload an image.";
-      console.log("Model Loaded");
     }
 
     // 画像プレビューと分類開始
@@ -91,6 +92,7 @@
 
     // 画像分類の実行
     function classifyImage(image) {
+      console.log("Classifying image...");
       classifier.classify(image, function(err, results) {
         if (err) {
           console.error('Classification Error: ', err);
