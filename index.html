@@ -4,6 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Teachable Machine Image Model - File Upload</title>
+  <style>
+    .progress-bar {
+      width: 100%;
+      background-color: #f3f3f3;
+    }
+    .progress-bar-fill {
+      height: 20px;
+      width: 0%;
+      background-color: #4caf50;
+      text-align: center;
+      line-height: 20px;
+      color: white;
+    }
+  </style>
 </head>
 <body>
   <h1>Image Classification using Teachable Machine</h1>
@@ -12,12 +26,21 @@
   <!-- ファイル入力 -->
   <input type="file" id="imageInput" accept="image/*" onchange="previewImage()">
   <br><br>
-  
+
   <!-- キャンバス -->
   <canvas id="canvas" width="320" height="320"></canvas>
   <br>
-  
+
   <!-- 結果表示 -->
+  <div>
+    <p>フォーマル:</p>
+    <div class="progress-bar"><div class="progress-bar-fill" id="formal-bar"></div></div>
+    <p>水着:</p>
+    <div class="progress-bar"><div class="progress-bar-fill" id="swimsuit-bar"></div></div>
+    <p>その他:</p>
+    <div class="progress-bar"><div class="progress-bar-fill" id="other-bar"></div></div>
+  </div>
+
   <p>Prediction: <span id="prediction">Waiting for image...</span></p>
 
   <!-- ライブラリ読み込み -->
@@ -100,8 +123,24 @@
           return;
         }
         console.log('Classification results:', results);
+
+        // 結果を出力バーに反映
+        updateProgressBar('formal-bar', results, 'フォーマル');
+        updateProgressBar('swimsuit-bar', results, '水着');
+        updateProgressBar('other-bar', results, 'その他');
+
         document.getElementById('prediction').innerText = "Prediction: " + results[0].label;
       });
+    }
+
+    // プログレスバーを更新
+    function updateProgressBar(barId, results, label) {
+      const result = results.find(r => r.label === label);
+      if (result) {
+        const percentage = Math.round(result.confidence * 100);
+        document.getElementById(barId).style.width = percentage + '%';
+        document.getElementById(barId).innerText = percentage + '%';
+      }
     }
 
     // モデルを読み込み
