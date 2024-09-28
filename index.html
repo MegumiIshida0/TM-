@@ -1,158 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teachable Machine Image Model - File Upload</title>
-  <style>
-    .progress-bar {
-      width: 100%;
-      background-color: #f3f3f3;
-    }
-    .progress-bar-fill {
-      height: 20px;
-      width: 0%;
-      background-color: #4caf50;
-      text-align: center;
-      line-height: 20px;
-      color: white;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teachable Machine Image Model - File Upload</title>
+    <style>
+        .progress-bar {
+            width: 100%;
+            background-color: #f3f3f3;
+            height: 24px;
+            position: relative;
+            margin-bottom: 10px;
+        }
+        .progress-bar div {
+            background-color: #4caf50;
+            height: 100%;
+            width: 0;
+            transition: width 0.3s;
+        }
+    </style>
 </head>
 <body>
-  <h1>Image Classification using Teachable Machine</h1>
-  <p>Upload an image to classify it as "フォーマル", "水着", or "その他".</p>
+    <h1>Image Classification using Teachable Machine</h1>
+    <p>Upload an image to classify it as "フォーマル", "水着", or "その他".</p>
+    <input type="file" id="image-upload" accept="image/*">
+    <div class="progress-bar">
+        <div id="progress-bar-fill"></div>
+    </div>
+    <img id="uploaded-image" src="" alt="Uploaded Image" width="400px">
+    <p id="prediction">Prediction: Loading...</p>
+    <div>
+        <p>フォーマル: <span id="formal-output"></span></p>
+        <p>水着: <span id="swimwear-output"></span></p>
+        <p>その他: <span id="other-output"></span></p>
+    </div>
 
-  <!-- ファイル入力 -->
-  <input type="file" id="imageInput" accept="image/*" onchange="previewImage()">
-  <br><br>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+    <script>
+        const URL = "https://teachablemachine.withgoogle.com/models/O2CXrhSLy/";
 
-  <!-- キャンバス -->
-  <canvas id="canvas" width="320" height="320"></canvas>
-  <br>
+        let model, maxPredictions;
 
-  <!-- 結果表示 -->
-  <div>
-    <p>フォーマル:</p>
-    <div class="progress-bar"><div class="progress-bar-fill" id="formal-bar"></div></div>
-    <p>水着:</p>
-    <div class="progress-bar"><div class="progress-bar-fill" id="swimsuit-bar"></div></div>
-    <p>その他:</p>
-    <div class="progress-bar"><div class="progress-bar-fill" id="other-bar"></div></div>
-  </div>
+        async function init() {
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+        }
 
-  <p>Prediction: <span id="prediction">Waiting for image...</span></p>
-
-  <!-- ライブラリ読み込み -->
-  <script src="https://cdn.jsdelivr.net/npm/p5@latest/lib/p5.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/ml5@latest/dist/ml5.min.js"></script>
-
-  <script type="text/javascript">
-    // モデルURL
-    const imageModelURL = 'https://teachablemachine.withgoogle.com/models/O2CXrhSLy/model.json';
-    
-    // クラス分類器変数
-    let classifier;
-    let canvas, context;
-
-    // モデルの読み込み
-    function preload() {
-      console.log("Loading model...");
-      classifier = ml5.imageClassifier(imageModelURL, modelReady);
-    }
-
-    // モデルが準備完了した時に呼び出される
-    function modelReady() {
-      console.log("Model loaded successfully");
-      document.getElementById('prediction').innerText = "Model Loaded. Please upload an image.";
-    }
-
-    // 画像プレビューと分類開始
-    function previewImage() {
-      const file = document.getElementById('imageInput').files[0];
-      if (file) {
-        const reader = new FileReader();
-        
-        reader.onload = function(event) {
-          const img = new Image();
-          img.onload = function() {
-            canvas = document.getElementById('canvas');
-            context = canvas.getContext('2d');
-            context.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 画像のアスペクト比を維持してキャンバスに描画
-            const aspectRatio = img.width / img.height;
-            let newWidth, newHeight;
-            if (aspectRatio > 1) {  // 横長の場合
-              newWidth = canvas.width;
-              newHeight = canvas.width / aspectRatio;
-            } else {  // 縦長の場合
-              newHeight = canvas.height;
-              newWidth = canvas.height * aspectRatio;
-            }
+        async function predict() {
+            const imageElement = document.getElementById('uploaded-image');
+            const prediction = await model.predict(imageElement, false);
             
-            context.drawImage(img, 0, 0, newWidth, newHeight);
-            console.log("Image drawn to canvas");
-
-            classifyImage(canvas);  // キャンバスに描画した画像を分類
-          }
-          img.onerror = function() {
-            console.error("Image failed to load");
-            document.getElementById('prediction').innerText = "Error: Could not load image.";
-          }
-          img.src = event.target.result;
-        }
-        reader.onerror = function() {
-          console.error("File could not be read");
-          document.getElementById('prediction').innerText = "Error: Could not read file.";
-        }
-        reader.readAsDataURL(file);  // Base64形式で読み込み
-      } else {
-        console.error("No file selected");
-        document.getElementById('prediction').innerText = "Error: No file selected.";
-      }
-    }
-
-    // 画像分類の実行
-    function classifyImage(image) {
-      console.log("Classifying image...");
-      classifier.classify(image, function(err, results) {
-        if (err) {
-          console.error('Classification Error: ', err);
-          document.getElementById('prediction').innerText = "Error during classification.";
-          return;
+            document.getElementById('formal-output').innerText = (prediction[0].probability * 100).toFixed(2) + "%";
+            document.getElementById('swimwear-output').innerText = (prediction[1].probability * 100).toFixed(2) + "%";
+            document.getElementById('other-output').innerText = (prediction[2].probability * 100).toFixed(2) + "%";
+            document.getElementById('prediction').innerText = "Prediction complete!";
         }
 
-        console.log('Classification results:', results);
+        document.getElementById('image-upload').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            const imgElement = document.getElementById('uploaded-image');
+            const progressBar = document.getElementById('progress-bar-fill');
 
-        if (results.length > 0) {
-          // 結果を出力バーに反映
-          updateProgressBar('formal-bar', results, 'フォーマル');
-          updateProgressBar('swimsuit-bar', results, '水着');
-          updateProgressBar('other-bar', results, 'その他');
+            reader.onload = function (e) {
+                imgElement.src = e.target.result;
+                imgElement.onload = function () {
+                    progressBar.style.width = "100%";
+                    predict();
+                };
+            };
 
-          document.getElementById('prediction').innerText = "Prediction: " + results[0].label;
-        } else {
-          document.getElementById('prediction').innerText = "Error: No classification results.";
-        }
-      });
-    }
+            reader.onprogress = function (e) {
+                if (e.lengthComputable) {
+                    const percentLoaded = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = percentLoaded + "%";
+                }
+            };
 
-    // プログレスバーを更新
-    function updateProgressBar(barId, results, label) {
-      const result = results.find(r => r.label === label);
-      if (result) {
-        const percentage = Math.round(result.confidence * 100);
-        document.getElementById(barId).style.width = percentage + '%';
-        document.getElementById(barId).innerText = percentage + '%';
-      } else {
-        document.getElementById(barId).style.width = '0%';
-        document.getElementById(barId).innerText = '0%';
-      }
-    }
+            reader.readAsDataURL(file);
+        });
 
-    // モデルを読み込み
-    preload();
-  </script>
+        init();
+    </script>
 </body>
 </html>
