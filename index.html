@@ -3,79 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teachable Machine Image Model - p5.js and ml5.js</title>
+  <title>Teachable Machine Image Model - File Upload</title>
 </head>
 <body>
-  <div>Teachable Machine Image Model - p5.js and ml5.js</div>
+  <h1>Image Classification using Teachable Machine</h1>
+  <p>Upload an image to classify it as "フォーマル", "水着", or "その他".</p>
 
+  <!-- ファイル入力 -->
+  <input type="file" id="imageInput" accept="image/*" onchange="previewImage()">
+  <br><br>
+  
+  <!-- キャンバス -->
+  <canvas id="canvas" width="320" height="320"></canvas>
+  <br>
+  
+  <!-- 結果表示 -->
+  <p>Prediction: <span id="prediction">Waiting for image...</span></p>
+
+  <!-- ライブラリ読み込み -->
   <script src="https://cdn.jsdelivr.net/npm/p5@latest/lib/p5.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/p5@latest/lib/addons/p5.dom.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/ml5@latest/dist/ml5.min.js"></script>
 
   <script type="text/javascript">
-    // Classifier Variable
-    let classifier;
-    // Model URL
-    let imageModelURL = 'https://teachablemachine.withgoogle.com/models/O2CXrhSLy/';
+    // モデルURL
+    const imageModelURL = 'https://teachablemachine.withgoogle.com/models/O2CXrhSLy/';
     
-    // Video
-    let video;
-    let flippedVideo;
-    // To store the classification
-    let label = "Loading model...";
+    // クラス分類器変数
+    let classifier;
+    let canvas, context;
 
-    // Load the model first
+    // モデルの読み込み
     function preload() {
-      classifier = ml5.imageClassifier(imageModelURL + 'model.json', modelLoaded);
+      classifier = ml5.imageClassifier(imageModelURL + 'model.json', modelReady);
     }
 
-    // When the model is loaded
-    function modelLoaded() {
-      console.log("Model Loaded!");
-      label = "Model Loaded!";
+    // モデルが準備完了した時に呼び出される
+    function modelReady() {
+      document.getElementById('prediction').innerText = "Model Loaded. Please upload an image.";
+      console.log("Model Loaded");
     }
 
-    function setup() {
-      createCanvas(320, 260);
-      // Create the video
-      video = createCapture(VIDEO);
-      video.size(320, 240);
-      video.hide();
-      // Start classifying once the video is ready
-      classifyVideo();
-    }
+    // 画像プレビューと分類開始
+    function previewImage() {
+      const file = document.getElementById('imageInput').files[0];
+      if (file) {
+        const reader = new FileReader();
+        
+        reader.onload = function(event) {
+          const img = new Image();
+          img.onload = function() {
+            canvas = document.getElementById('canvas');
+            context = canvas.getContext('2d');
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 画像のアスペクト比を維持してキャンバスに描画
+            const aspectRatio = img.width / img.height;
+            let newWidth, newHeight;
+            if (aspectRatio > 1) {  // 横長の場合
+              newWidth = canvas.width;
+              newHeight = canvas.width / aspectRatio;
+            } else {  // 縦長の場合
+              newHeight = canvas.height;
+              newWidth = canvas.height * aspectRatio;
+            }
+            
+            context.drawImage(img, 0, 0, newWidth, newHeight);
+            console.log("Image drawn to canvas");
 
-    function draw() {
-      background(0);
-      // Draw the video
-      flippedVideo = ml5.flipImage(video); // Flip the video for correct orientation
-      image(flippedVideo, 0, 0);
-
-      // Draw the label
-      fill(255);
-      textSize(16);
-      textAlign(CENTER);
-      text(label, width / 2, height - 4);
-    }
-
-    // Get a prediction for the current video frame
-    function classifyVideo() {
-      classifier.classify(flippedVideo, gotResult); // Use the flipped video
-    }
-
-    // When we get a result
-    function gotResult(error, results) {
-      // If there is an error
-      if (error) {
-        console.error("Classification Error: ", error);
-        label = "Error during classification";
-        return;
+            classifyImage(canvas);  // キャンバスに描画した画像を分類
+          }
+          img.onerror = function() {
+            console.error("Image failed to load");
+            document.getElementById('prediction').innerText = "Error: Could not load image.";
+          }
+          img.src = event.target.result;
+        }
+        reader.onerror = function() {
+          console.error("File could not be read");
+          document.getElementById('prediction').innerText = "Error: Could not read file.";
+        }
+        reader.readAsDataURL(file);
+      } else {
+        console.error("No file selected");
+        document.getElementById('prediction').innerText = "Error: No file selected.";
       }
-      // The results are in an array ordered by confidence.
-      label = results[0].label;
-      // Classify again for the next frame!
-      classifyVideo();
     }
+
+    // 画像分類の実行
+    function classifyImage(image) {
+      classifier.classify(image, function(err, results) {
+        if (err) {
+          console.error('Classification Error: ', err);
+          document.getElementById('prediction').innerText = "Error during classification.";
+          return;
+        }
+        console.log('Classification results:', results);
+        document.getElementById('prediction').innerText = "Prediction: " + results[0].label;
+      });
+    }
+
+    // モデルを読み込み
+    preload();
   </script>
 </body>
 </html>
