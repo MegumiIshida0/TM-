@@ -26,7 +26,7 @@
 
   <script type="text/javascript">
     // モデルURL
-    const imageModelURL = 'https://teachablemachine.withgoogle.com/models/O2CXrhSLy/';
+    const imageModelURL = 'https://teachablemachine.withgoogle.com/models/O2CXrhSLy/model.json';
     
     // クラス分類器変数
     let classifier;
@@ -35,7 +35,7 @@
     // モデルの読み込み
     function preload() {
       console.log("Loading model...");
-      classifier = ml5.imageClassifier(imageModelURL + 'model.json', modelReady);
+      classifier = ml5.imageClassifier(imageModelURL, modelReady);
     }
 
     // モデルが準備完了した時に呼び出される
