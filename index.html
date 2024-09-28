@@ -122,14 +122,19 @@
           document.getElementById('prediction').innerText = "Error during classification.";
           return;
         }
+
         console.log('Classification results:', results);
 
-        // 結果を出力バーに反映
-        updateProgressBar('formal-bar', results, 'フォーマル');
-        updateProgressBar('swimsuit-bar', results, '水着');
-        updateProgressBar('other-bar', results, 'その他');
+        if (results.length > 0) {
+          // 結果を出力バーに反映
+          updateProgressBar('formal-bar', results, 'フォーマル');
+          updateProgressBar('swimsuit-bar', results, '水着');
+          updateProgressBar('other-bar', results, 'その他');
 
-        document.getElementById('prediction').innerText = "Prediction: " + results[0].label;
+          document.getElementById('prediction').innerText = "Prediction: " + results[0].label;
+        } else {
+          document.getElementById('prediction').innerText = "Error: No classification results.";
+        }
       });
     }
 
@@ -140,6 +145,9 @@
         const percentage = Math.round(result.confidence * 100);
         document.getElementById(barId).style.width = percentage + '%';
         document.getElementById(barId).innerText = percentage + '%';
+      } else {
+        document.getElementById(barId).style.width = '0%';
+        document.getElementById(barId).innerText = '0%';
       }
     }
 
