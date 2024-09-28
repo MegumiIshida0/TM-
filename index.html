@@ -82,7 +82,7 @@
           console.error("File could not be read");
           document.getElementById('prediction').innerText = "Error: Could not read file.";
         }
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(file);  // Base64形式で読み込み
       } else {
         console.error("No file selected");
         document.getElementById('prediction').innerText = "Error: No file selected.";
