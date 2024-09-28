@@ -21,20 +21,22 @@
   
   <script type="text/javascript">
     // モデルのURL
-    const imageModelURL = 'https://teachablemachine.withgoogle.com/models/O2CXrhSLy/'; // Replace with your model's URL
+    const imageModelURL = 'https://teachablemachine.withgoogle.com/models/O2CXrhSLy/'; // Teachable MachineのモデルURL
     
     // クラス分類器変数
     let classifier;
-    let imageInput;
     let canvas, context;
+    let imageInput;
 
     // モデルの読み込み
     function preload() {
+      console.log("Loading model..."); // モデル読み込み開始のログ
       classifier = ml5.imageClassifier(imageModelURL + 'model.json', modelReady);
     }
 
     // モデルが準備できた時に呼び出される関数
     function modelReady() {
+      console.log('Model loaded successfully');  // モデル読み込み成功のログ
       document.getElementById('prediction').innerText = "Model Loaded. Please upload an image.";
     }
 
@@ -48,8 +50,20 @@
           canvas = document.getElementById('canvas');
           context = canvas.getContext('2d');
           context.clearRect(0, 0, canvas.width, canvas.height);
-          context.drawImage(img, 0, 0, canvas.width, canvas.height);
-          classifyImage(img);
+          
+          // 画像をキャンバスにリサイズして描画
+          const aspectRatio = img.width / img.height;
+          let newWidth, newHeight;
+          if (aspectRatio > 1) {  // 横長の場合
+            newWidth = canvas.width;
+            newHeight = canvas.width / aspectRatio;
+          } else {  // 縦長の場合
+            newHeight = canvas.height;
+            newWidth = canvas.height * aspectRatio;
+          }
+          context.drawImage(img, 0, 0, newWidth, newHeight);
+          
+          classifyImage(img);  // 画像を分類
         }
         img.src = event.target.result;
       }
@@ -60,10 +74,12 @@
     function classifyImage(img) {
       classifier.classify(img, function(err, results) {
         if (err) {
-          console.error(err);
+          console.error('Error during classification:', err);  // エラー発生時のログ
+          document.getElementById('prediction').innerText = "Error during classification. Please try again.";
           return;
         }
-        document.getElementById('prediction').innerText = results[0].label;
+        console.log('Classification results:', results);  // 分類結果のログ
+        document.getElementById('prediction').innerText = results[0].label;  // 結果を表示
       });
     }
 
@@ -72,4 +88,3 @@
   </script>
 </body>
 </html>
-
